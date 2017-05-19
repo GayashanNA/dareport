@@ -1,0 +1,34 @@
+% appendix.tex
+\documentclass[dareport.tex]{subfiles}
+\begin{document}
+% Content here
+\section{Appendix}
+
+
+\begin{algorithm}
+\caption{Floyd-Warshall Algorithm}\label{euclid}
+\begin{algorithmic}[1]
+\Procedure{sequential\_FW}{}
+\BState \emph{begin}
+\If {$i=j$}
+\State $D_{ij}(0) = 0$
+\EndIf
+\If {$i \neq j$ and \textit{edge exists}}
+\State $D_{ij}(0) = length((V_{i}, V_{j}))$
+\EndIf
+\State $D_{ij}(0) = \infty $ otherwise
+\For {$k = 1$ to $N$}
+\For {$i = 1$ to $N$}
+\For {$j = 1$ to $N$}
+\State $D_{ij}^{(k)}=min(D_{ij}^{(k-1)}, D_{ik}^{(k-1)}+D_{kj}^{(k-1)})$
+\EndFor
+\EndFor
+\EndFor
+${S = D(N)}$
+\BState \emph{end}
+\EndProcedure
+\end{algorithmic}
+\end{algorithm}
+
+
+\end{document}

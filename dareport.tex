@@ -1,0 +1,104 @@
+%% Use MiKTeX to compile
+%% Distributed Algorithms Term Project Report
+%%
+%% Overall Document Format
+\documentclass[11pt]{article}
+\usepackage{dareport}
+\sloppy
+\setlength\footskip{28pt}
+\setlength\textheight{9.0in}
+\setlength\titlebox{1.0in}
+
+%% START PUT ANY \usepackage{coo_package} AND ITS SETTINGS HERE
+
+
+\usepackage{subfiles}
+
+%% Maths
+\usepackage{mathtools}
+
+%% Plot
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{width=8cm,compat=1.9}
+\usetikzlibrary{arrows}
+
+%% Algorithm
+\usepackage{amsmath}
+\usepackage{algorithm}
+\usepackage[noend]{algpseudocode}
+\makeatletter
+\def\BState{\State\hskip-\ALG@thistlm}
+\makeatother
+
+%% Images
+\usepackage{graphicx}
+\graphicspath{ {images/} }
+
+%% Reference
+\usepackage[backend=bibtex]{biblatex}
+\addbibresource{dareport.bib}
+
+%% Title/Authors
+\title{Distributed Multi-Server Chat System}
+
+\author{San Kho Lin \\ \texttt{(829463)} \And
+Gayashan N. Amarasinghe \\ \texttt{(827864)} \And
+Yixin Chen \\ \texttt{(522819)} \AND
+(sanl1, gamarasinghe, a.chen15)@student.unimelb.edu.au}
+
+\begin{document}
+\maketitle
+
+
+%% START MAIN CONTENT HERE
+
+\begin{abstract}
+The abstract of the paper if any. If it is too short to abstract, may be, it should be skipped all together.
+\end{abstract}
+     
+\begin{keywords} 
+gossip, leader election, consensus, distributed algorithms, multicast
+\end{keywords}
+
+
+%% App Logic Section
+\subfile{intro}
+
+%% App Logic Section
+\subfile{applogic}
+
+%% Failure Detection Section
+\subfile{failuredetection}
+
+%% Election Section
+\subfile{election}
+
+%% Consensus Section
+\subfile{consensus}
+
+%% Page Break
+\newpage
+
+%% Section
+\subfile{sample}
+
+%% Page Break
+\newpage
+
+%% Conclusion Section
+\subfile{conclusion}
+
+\newpage
+
+%% References
+\section{References}
+\printbibliography[heading=none]
+
+\newpage
+
+%% Appendix
+\subfile{appendix}
+
+
+\end{document}
