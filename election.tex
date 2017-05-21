@@ -2,11 +2,183 @@
 \documentclass[dareport.tex]{subfiles}
 \begin{document}
 % Content here
-\section{Leader Election}
-Leader Election Leader Election Leader Election
-Leader Election Leader Election Leader Election
-Leader Election Leader Election Leader Election
-Leader Election Leader Election Leader Election
-Leader Election Leader Election Leader Election
-Leader Election Leader Election Leader Election
+\section{Leader Election} \label{sec:election}
+In a distributed system, a non-concrete leader is elected in order to coordinate certain activities that manage the flawless coordination of the processes. An algorithm which is used to elect a leader is known as an election algorithm. The idea of an election is common in real world. A set of nodes that has the ability to talk to eachother, select a single node as the leader after some discussion among themselves. When the election process has finished, only one node remains as the leader, and every other node agrees and knows the identity of the leader. In a distributed system, conceptually the election process is similar in nature. 
+
+First of all we have a set of assumptions regarding the nodes and the network.
+\begin{itemize}
+\item The network is fully connected.
+\item Each node in the network has a priority that can be clearly compared which each other.
+\item Each node in the network is aware of the priority of every node in the network.
+\item The network is synchronized and the delivery of messages is guaranteed.
+\item A process does not know, in advance, whether another process has failed or not.
+\end{itemize}
+
+
+
+For Strike project we implemented two election algorithms to elect a coordinator for our distributed system. The responsibilities of the elected leader are explained further in \cref{sec:consensus}. 
+
+
+\subsection{Bully Algorithm} \label{ssec:bully}
+
+\begin{algorithm}[h]
+	\caption{Bully Election Algorithm}
+	\label{bully-algorithm}
+	\begin{algorithmic}[1]
+		\BState \emph{BEGIN}
+		\Procedure{StartElection}{$P_{i}$}
+		\For {every process $P_{j} : priority(P_{j}) > priority(P_{i}$)}
+			\State $P_{i}$ sends \emph{election} message to $P_{j}$
+		\EndFor
+		\State $P_{i}$ waits for \emph{answer} message for the interval T2.
+		\If {no \emph{answer} message within timeout T2}
+		
+		\Comment No process with priority higher than $P_{i}$ exists.
+		
+		\Comment $P_{i}$ is the coordinator.
+			\For {every process $P_{j} : priority(P_{j}) < priority(P_{i}$)}
+				\State $P_{i}$ sends \emph{coordinator} message to $P_{j}$
+			\EndFor
+			\State $P_{i}$ stops election procedure.
+		\Else
+		
+		\Comment A higher priority process has replied.
+			\State $P_{i}$ waits for \emph{coordinator} message for the interval T3.
+		\If {$P_{i}$ receives \emph{coordinator} message from $P_{j}$ within timeout T3}
+		
+		\Comment A higher priority process has elected itself as the leader.
+			\State $P_{i}$ admits $P_{j}$ as the new coordinator.
+			\State $P_{i}$ stops election procedure.
+		\Else
+			\State \textproc{StartElection($P_{i}$)}
+			\Comment $P_{i}$ restarts the election
+		\EndIf
+		\EndIf
+		\EndProcedure
+		\State A process $P_{i}$ does not receive a response within T1 from the coordinator.
+		
+		\Comment Current coordinator has failed.
+		\State\indent \textproc{StartElection($P_{i}$)}
+		\State A process $P_{j} \left[priority(j) > priority(i)\right]$ receives an \emph{election} message from $P_{i}$
+		\State\indent $P_{j}$ sends an \emph{answer} message to $P_{i}$
+		\State\indent \textproc{StartElection($P_{j}$)}
+		\State A process $P_{j} \left[priority(j) < priority(i)\right]$ receives a \emph{coordinator} message from $P_{i}$
+		
+		\Comment A higher priority process has been elected.
+		\State\indent $P_{j}$ admits $P_{i}$ as the new coordinator.
+		\State\indent $P_{j}$ stops election procedure.
+		\BState \emph{END}
+	\end{algorithmic}
+\end{algorithm}
+\subsection{Fast Bully Algorithm} \label{ssec:fast-bully}
+
+TODO FAST BULLY
+\begin{algorithm}[h]
+	\caption{Fast Bully Election Algorithm - Starting failure recovery}
+	\label{fast-bully-algorithm-start-failure-recovery}
+	\begin{algorithmic}[1]
+		\BState \emph{BEGIN}
+		\Procedure{StartFailureRecovery}{$P_{i}$}
+		\State $P_{i}$ sends \emph{iamup} message to every process
+		\State $P_{i}$ waits for \emph{view} message for interval T2
+		\If{no \emph{view} message within T2}
+		
+		\Comment $P_{i}$ is the coordinator
+		\State Stop the procedure
+		\Else
+		\State $P_{i}$ compares the received views with its view.
+		\If {view of $P_{i}$ $\ne$ receieved view}
+			\State $P_{i}$ updates its view.
+		\EndIf
+		\If {$priorty(P_{i}) > priority(P_{j})$ $\forall P_{j}$ in its view}
+		
+		\Comment $P_{i}$ is the highest priority process in the current network.
+			\For {every process $P_{j} : priority(P_{j}) < priority(P_{i}$)}
+				\State $P_{i}$ sends \emph{coordinator} message to $P_{j}$
+				\State $P_{i}$ stops the procedure.
+			\EndFor
+		\Else
+			\State $P_{i}$ admits the highest priority process in its view as the coordinator.
+			\State $P_{i}$ stops the procedure.
+		\EndIf
+		\EndIf
+		\EndProcedure
+		\BState \emph{END}
+	\end{algorithmic}
+\end{algorithm}
+\begin{algorithm}[h]
+	\caption{Fast Bully Election Algorithm -  Start election}
+	\label{fast-bully-algorithm-start-election}
+	\begin{algorithmic}[1]
+		\BState \emph{BEGIN}
+		\Procedure{StartElection}{$P_{i}$}
+			\For {every process $P_{j} : priority(P_{j}) > priority(P_{i}$)}
+				\State $P_{i}$ sends \emph{election} message to $P_{j}$
+			\EndFor
+			\State $P_{i}$ waits for \emph{answer} message for the interval T2.
+			\If {no \emph{answer} message within timeout T2}
+				
+			\Comment No process with priority higher than $P_{i}$ exists.
+				
+			\Comment $P_{i}$ is the coordinator.
+				\For {every process $P_{j} : priority(P_{j}) < priority(P_{i}$)}
+					\State $P_{i}$ sends \emph{coordinator} message to $P_{j}$
+				\EndFor
+				\State $P_{i}$ stops election procedure.
+			\Else
+			
+			\Comment Processes with higher priority have answered.
+				\State add answered process to answered list.
+				\State send \emph{nomination} message to $P_{j}$ : $priority(P_{j}) > priority(P_{k})$ $\forall P_{k}$ that answered  $P_{i}$ \label{send-nomination}
+				\State $P_{i}$ waits for \emph{coordinator} message for interval T3.
+				\If {A coordinator message from $P_{j}$ is received}
+					\State $P_{i}$ admits $P_{j}$ as the new coordinator.
+					\State $P_{i}$ stops election procedure.
+				\Else
+					\State Remove $P_{j}$ from answered list.
+					\State Repeat \cref{send-nomination} for the next $P_{j}$ in the answered list.
+					\If {Answered list is empty}
+						\State \textproc{StartElection($P_{j}$)}
+					\EndIf
+				\EndIf
+			\EndIf
+		\EndProcedure
+		\BState \emph{END}
+	\end{algorithmic}
+\end{algorithm}
+\begin{algorithm}[h]
+	\caption{Fast Bully Election Algorithm}
+	\label{fast-bully-algorithm}
+	\begin{algorithmic}[1]
+		\BState \emph{BEGIN}
+		\State A process $P_{i}$ recovers from failure
+			\State\indent\textproc{StartFailureRecovery($P_{i}$)}
+		\State A process $P_{i}$ may receive an IamUp message from $P_{j}$
+			\State\indent $P_{i}$ sends view message to $P_{j}$.
+		\State A process $P_{i}$ does not receive a response within T1 from the coordinator
+			\State\indent\textproc{StartElection($P_{i}$)}
+		\State A process $P_{j} \left[priority(j) > priority(i)\right]$ receives an \emph{election} message from $P_{i}$
+			\State\indent $P_{j}$ sends an \emph{answer} message to process $P_{i}$
+			\State\indent $P_{j}$ waits for either a \emph{coordinator} or a \emph{nomination} message for interval T4
+			\If {no \emph{coordinator} or \emph{nomination} message within T4}
+				\State\textproc{StartElection($P_{j}$)}
+			\Else
+			\EndIf
+			\State A process $P_{j} \left[priority(j) > priority(i)\right]$ receives a \emph{nomination} message from $P_{i}$
+			
+			\Comment The current election manager has decided $P_{j}$ to be the new coordinator.
+			\For {every process $P_{k} : priority(P_{k}) < priority(P_{j}$)}
+				\State $P_{j}$ sends \emph{coordinator} message to $P_{k}$
+				\State $P_{j}$ stops the procedure.
+			\EndFor
+			\State A process $P_{j} \left[priority(j) < priority(i)\right]$ receives a \emph{coordinator} message from $P_{i}$
+			
+			\Comment A higher priority process has been elected.
+			\State\indent $P_{j}$ admits $P_{i}$ as the new coordinator.
+			\State\indent $P_{j}$ stops election procedure.
+		\BState \emph{END}
+	\end{algorithmic}
+\end{algorithm}
+\subsection{Experiment Results}
+\subsection{Discussion}
 \end{document}
