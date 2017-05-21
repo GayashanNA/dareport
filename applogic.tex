@@ -44,12 +44,85 @@ To begin with, we will discuss the requirement specification and assumption of t
 
 \item If a chat server crashes or stops responding then other chat servers should detect this situation --- Failure Detection. All chatrooms on that server should be removed from the list and clients should not be redirected to that server anymore until it come back to alive. The connected clients are simply getting disconnected in the case of a chat server crash.
 
-
 \end{enumerate}
 
 
 \subsection{Protocol Design}
-As with the core concept of Distributed Systems, 
+The core concept of Distributed Systems defines software components 
+located at networked computers \textbf{communicate and coordinate their actions only by passing messages}\cite{coulouris}. The protocol specifies exactly how the clients-to-servers and server-to-server communication happen. Therefore, in our Strike System implementation, the protocol design becomes a crucial part of the system. The communication message has to be consistent and serializable. For this we choose JSON\footnote{http://www.json.org/} which is a lightweight data-interchangeable format. In the following example, it explains the basic building block of how JSON message are passing between client-server and server-server processes.
+
+\begin{enumerate}[leftmargin=*]
+
+\item Example: \textbf{List Server Protocol}
+\\
+The client can ask for the list of servers in the system and, send to server as a JSON message:
+\begin{small}
+\begin{verbatim}
+{"type":"listserver"}
+\end{verbatim}
+\end{small}
+
+The server replies with a list of all the servers in the system:
+\begin{small}
+\begin{verbatim}
+{
+    "type":"serverlist", "servers": 
+    [ 
+        {"serverid":"1", "address":"192.168.0.1", "port":"4444"}, 
+        {"serverid":"2", "address":"192.168.0.2", "port":"4444"}
+    ]
+}
+\end{verbatim}
+\end{small}
+In this example, the generated protocols are \verb|type|, \verb|listserver|, \verb|serverlist|, \verb|servers|, \verb|serverid|, \verb|address| and \verb|port|. This is a simple client-server protocol example. We will see a more moderate complex protocol example in next.
+
+\item Example: \textbf{Login Authentication Protocol}
+\\
+At Login screen, the client send a user authentication message to the server:
+\begin{small}
+\begin{verbatim}
+{"type":"authenticate", "username":"victor", "password":"cheese"}
+\end{verbatim}
+\end{small}
+The chat server will then check the username and password in user database and attempt to authenticate the user. If the authentication has failed, the server will response to the client with the message:
+\begin{small}
+\begin{verbatim}
+{"type":"authresponse", "success":"false", "reason":"UnknownAccountException"}
+\end{verbatim}
+\end{small}
+The user database can be a centralized database system such as making use of third party database management software. In our implementation, we use Apache Shiro\footnote{https://shiro.apache.org/} framework to make an abstraction for the concrete implementation. As such, the fail reason depends on this middleware specific exceptions. For example, \textit{UnknownAccountException}, \textit{IncorrectCredentialsException}, \textit{LockedAccountException}, \textit{AuthenticationException} are possible Shiro exceptions that can response to the client.
+However, if the authentication is success, the chat server response to the client with message:
+\begin{small}
+\begin{verbatim}
+{"type":"authresponse", "success":"true", "reason":"none"}
+\end{verbatim}
+\end{small}
+And the chat server also send to all other servers with message:
+\begin{small}
+\begin{verbatim}
+{
+    "type":"notifyusersession", "sessionid":"ba64077b-85b4-40f0-a5ac-480ad3e341b3", 
+    "username":"victor", "serverid":"1", "status":"login"
+}
+\end{verbatim}
+\end{small}
+And if the user logout, the chat server send to all other servers with message:
+\begin{small}
+\begin{verbatim}
+{
+    "type":"notifyusersession", "sessionid":"ba64077b-85b4-40f0-a5ac-480ad3e341b3",
+    "username":"victor", "serverid":"1", "status":"logout"
+}
+\end{verbatim}
+\end{small}
+
+
+
+
+\end{enumerate}
+
+
+
 
 
 
