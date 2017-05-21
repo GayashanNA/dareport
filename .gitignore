@@ -1,4 +1,7 @@
 *.pdf
+.idea
+*.iml
+
 
 ## Core latex/pdflatex auxiliary files:
 *.aux
