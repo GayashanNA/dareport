@@ -14,7 +14,7 @@
 % Content here
 \section{Leader Election} \label{sec:election}
 \subsection{What is Leader Election?}
-A leader in a distributed system is a designated node which has authority over the system. Typical responsibilities of a leader in such a system are mutual exclusion, synchronisation, scheduling, membership coordination, load balancing, etc. In a distributed system, a non-concrete leader is elected in order to coordinate such activities that manage the flawless execution of the processes/servers. An algorithm which is used to elect a leader is known as an election algorithm.
+A leader or a coordinator in a distributed system is a designated node which has authority over the system (through out this text leader and coordinator are used interchangeably). Typical responsibilities of a leader in such a system are mutual exclusion, synchronisation, scheduling, membership coordination, load balancing, etc. In a distributed system, a non-concrete leader is elected in order to coordinate such activities that manage the flawless execution of the processes/servers. An algorithm which is used to elect a leader is known as an election algorithm.
 
 The idea of an election is common in real world. A set of entities that has the ability to talk to each other, select a single entity out of them as the leader after some discussion among themselves. When the election process has finished, only one entity remains as the leader, and every other entity agrees and knows the identity of the leader. In a distributed system, conceptually the election process is similar in nature. A distributed system consists of nodes (servers/processes) which are connected via a network. Similar to the real world scenario, once a leader is elected through a leader election algorithm, all of the servers have to agree on that choice. If the leader fails or retires at some point new election is conducted to elect a new leader. The leader election policy depends on the algorithm and the requirements of the system.
 
@@ -45,7 +45,7 @@ The leader election policy depends on the requirements of the distributed system
 In this section we describe how we have implemented the Bully Algorithm, complexity of the Bully Algorithm and what are the pros and cons of the Bully Algorithm. The Bully Algorithm\cite{election} is proposed in 1982 as a form of a leader election algorithm to be used in a scenario where one or more processes (possibly including the current leader) has failed. Therefore unlike many election algorithms, Bully Algorithm is able to function even with reasonable process failures.
 
 However the original authors of the Bully Algorithm requires a set of assumptions regarding the nodes and the network\cite{election}.
-\begin{enumerate}
+\begin{enumerate}\label{ba-assumptions}
 	\item The network is fully connected.\label{assumption:1}
 	\item Each node in the network has a priority that can be clearly compared which each other.\label{assumption:2}
 	\item Each node in the network is aware of the priority of every node in the network (a priori knowledge).\label{assumption:3}
@@ -56,14 +56,22 @@ However the original authors of the Bully Algorithm requires a set of assumption
 	\item There are no transmission errors.\label{assumption:8}
 	\item A process never pauses and always responds to incoming messages with no delay.\label{assumption:9}
 \end{enumerate}
-
+There are three message types exchanged in Bully Algorithm. In Strike these message types available through the \emph{Protocol}.
+\begin{itemize}\label{ba-message-types}
+	\item \emph{election} : the request message sent by a process to start the election procedure\\
+	e.g. : \verb|{"type" : "election", "serverid" : "victor"}|
+	\item \emph{answer} : the response message to the \emph{election} message\\
+	e.g. : \verb|{"type" : "answer", "serverid" : "victor"}|
+	\item \emph{coordinator} : the message which claims that the sender is the new coordinator\\
+	e.g. : \verb|{"type" : "coordinator", "serverid" : "victor"}|
+\end{itemize}
 The \Cref{bully-algorithm} illustrates the pseudocode of the Bully Algorithm (BA). The steps of this algorithm and how it is implemented in Strike is explained below.
 \begin{enumerate}[leftmargin=*]
 	\item First step is to configure Strike to use the BA for leader election and to set up the required timeout values accordingly. To enable the Standard Bully Algorithm, the configuration value $election.fast.bully=false$ has to be set.
 	\item Next the timeout configurations required for the BA should be set. In Strike T1 value is set through a combination of configuration values $ alive.interval $ which means gossip interval in T seconds; and $ alive.error.factor $ which provides the factor by which the $ alive.interval $ is multiplied. So $ T1= alive.interval \times alive.error.factor $. Timeout values T2 and T3 in seconds, should be set respectively via $ election.answer.timeout $ and $ election.coordinator.timeout $. T1, T2, and T3 values should be the same for all the processes.
-	\item When a server detects that the current coordinator has not responded within \emph{T1} seconds, it sends an \emph{election} message to every server with a priority higher than itself. And then it begins waiting for T2 seconds for an \emph{answer} message from another server.
+	\item When a server detects that the current coordinator has not responded within \emph{T1} seconds, it sends an \emph{election} message to every server with a priority higher than itself. And then it begins waiting for $ T2 $ seconds for an \emph{answer} message from another server.
 	\item If the server did not receive any \emph{answer} message from another server, then it means there are no higher priority servers in the current system (Assumption \ref{assumption:9}). Therefor it appoints itself as the current coordinator and sends a \emph{coordinator} message to every server with a priority lower than itself. And then stops the election procedure.
-	\item If an \emph{answer} message has received from one or more servers, the server begins waiting for \emph{T3} seconds for a \emph{coordinator} message from one of those servers.
+	\item If an \emph{answer} message was received from one or more servers, the server begins waiting for \emph{T3} seconds for a \emph{coordinator} message from one of those servers.
 	\item If a \emph{coordinator} message has received within \emph{T3} seconds, then it means a server with a higher priority has already elected itself as the current leader. Therefor the server admits the new coordinator and stops the election procedure.
 	\item If no \emph{coordinator} message is received within \emph{T3} seconds, then it means one or more higher priority servers that previously sent an \emph{answer} message has failed during the election. Therefor the server restarts the election procedure.
 	\item A process may receive an \emph{election} message from a server with a priority lower than itself. This means the sender has detected that the current leader in the system has failed and a new leader has to be elected. Then the recipient server will send an \emph{answer} message to the sender. And then it begins its own election procedure (Steps 3 to 7).
@@ -71,7 +79,7 @@ The \Cref{bully-algorithm} illustrates the pseudocode of the Bully Algorithm (BA
 	\item When a server is starting, for every server the current coordinator is undefined. After the startup, when the configurations are loaded and the connections have been set up each process will run the leader election procedure (Steps 3 to 7) proposing itself as the leader.
 \end{enumerate}
 
-\begin{algorithm}[h]
+\begin{algorithm}[H]
 	\caption{Bully Election Algorithm}
 	\label{bully-algorithm}
 	\begin{algorithmic}[1]
@@ -120,11 +128,59 @@ The \Cref{bully-algorithm} illustrates the pseudocode of the Bully Algorithm (BA
 		\BState \emph{END}
 	\end{algorithmic}
 \end{algorithm}
-\subsection{Fast Bully Algorithm} \label{ssec:fast-bully}
 
-TODO FAST BULLY
-\begin{algorithm}[H]
-	\caption{Fast Bully Election Algorithm - Starting failure recovery}
+\subsubsection{Complexity of the Bully Algorithm}\label{sssec:ba-complexity}
+In the best case scenario, only the server with the second highest priority detects that the current coordinator is down and sends an \emph{election} message to the servers with higher priority than itself. But since the only server with a higher priority is the current coordinator who has failed, then after timeout $ T2 $ it can elect itself as the new coordinator and inform all the subordinate servers about the new coordinator. Therefor in the best case only $ N-2 $ messages need to be sent.
+
+However in the worst case, consider the server with the lowest priority detects that the current coordinator has failed. Then it will send an \emph{election} message to every server with a higher priority. And upon receipt of the \emph{election} message, after sending an \emph{answer} message, each of these servers will start their own elections (Step 8) by sending \emph{election} messages to every server with a higher priority. So in this scenario $ N-1 $ servers will begin elections. This cascading effect leads to $ O(n^2) $ messages to be exchanged in the worst case.
+
+\subsection{Fast Bully Algorithm} \label{ssec:fast-bully}
+The Fast Bully Algorithm (FBA)\cite{fastbully} was designed to overcome the $ O(n^2) $ message complexity of the Bully Algorithm, and as a result to increase the efficiency of the election procedure. However the roots of the FBA come from BA. Similar to BA, FBA is also fault tolerent. So it can cope with the situations where the processes fail before, during or after the election procedure. The FBA also assumes the same assumptions as BA (\Cref{ba-assumptions}).
+
+In addition to the 3 types of messages used in BA in \Cref{ba-message-types}, FBA uses 3 more messages. So 6 types of messages in total are used in FBA.
+\begin{itemize}\label{fba-message-types}
+	\item \emph{nomination} : the message sent to the process with the highest number to notify that it is the candidate for the coordinator\\
+	e.g. : \verb|{"type" : "nomination", "serverid" : "victor"}|
+	\item \emph{iamup} : when a process has recovered from a failure, this message is sent\\
+	e.g. : \verb|{"type" : "iamup", "serverid" : "victor"}|
+	\item \emph{view} : the response message to the \emph{iamup} message. This message contains details of all the servers currently in the system and a separate entry for the current coordinator of the system.\\
+	e.g. :
+	\begin{small}
+		\begin{verbatim}
+		{
+		"type":"serverlist", "coordinatorid" : "1",
+		"servers": 
+		[ 	
+		{"serverid":"1", "address":"192.168.0.1", "port":"4444"}, 
+		{"serverid":"2", "address":"192.168.0.2", "port":"4444"} 
+		]
+		}
+		\end{verbatim}
+	\end{small}
+\end{itemize}
+The \Cref{fast-bully-algorithm-start-failure-recovery,fast-bully-algorithm-start-election,fast-bully-algorithm} illustrates the pseudocode for FBA. The step-by-step guide on how it is implemented in Strike is explained below.
+
+\begin{enumerate}[leftmargin=*]
+	\item First step is to configure Strike to use the FBA for leader election and to set up the required timeout values accordingly. To enable the Standard Bully Algorithm, the configuration value $election.fast.bully=true$ has to be set.
+	\item Next the timeout configurations required for the FBA should be set. In Strike T1 value is set through a combination of configuration values $ alive.interval $ which means gossip interval in T seconds; and $ alive.error.factor $ which provides the factor by which the $ alive.interval $ is multiplied. So $ T1= alive.interval \times alive.error.factor $. Timeout values T2 and T3 in seconds, should be set respectively via $ election.answer.timeout $ and $ election.coordinator.timeout $. $T1, T2 $, and $ T3 $ values should be the same for all the processes.
+	\item Unlike $ T1, T2 $, and $ T3 $ the timeout value $ T4 $ is a different value for each server. This timeout value can be set via $ election.nomination.timeout $ configuration. The $ T4 $ value should be proportionate to the priority of the server, i.e. the server with the highest priority should expire the timeout $ T4 $ first. Furthermore the $ T4 $ value has no effect on the accuracy of the Fast Bully Algorithm, however it does affect the performance and the response time of the algorithm.
+	\item When a server detects that it has not received a response from the current coordinator for $ T1 $ seconds, it sends an \emph{election} message to every server with a priority higher than itself. And then it begins waiting for $ T2 $ seconds for an \emph{answer} message from another server.
+	\item If the server did not receive any \emph{answer} message from a higher priority server, then it means that there are no higher priority servers in the current system (Assumption \ref{assumption:9}). Therefor it appoints itself as the new coordinator and sends a \emph{coordinator} message to every server with a priority lower than itself. And then stops the election procedure.
+	\item If an \emph{answer} message was received by the server, then server collects all the answer messages for $ T2 $ and determines the highest priority server out of the answering servers. Then the server sends a \emph{nomination} message to that server nominating it as a candidate to become the new leader. Then the sender waits for a \emph{coordinator} message from that server for $ T3 $ seconds.
+	\item If a \emph{coordinator} message was received, then it means that the nominated candidate server has accepted the leader nomination and become the new leader. Therefor the server admits the new leader and stops the election procedure.
+	\item If no \emph{coordinator} message was received, then it means the previously nominated candidate server has failed. Then the server repeats Step 6 by selecting the next server with the highest priority. If there's no server left to chose, the server restarts the election procedure (Steps 4 to 8).
+	\item If a server receives an \emph{election} message from a server with a priority lower than itself, then the server sends an \emph{answer} message to the server. Then it waits for $ T4 $ seconds for a \emph{nomination} or a \emph{coordinator} message.
+	\item If a \emph{coordinator} message or \emph{nomination} message was not received within $ T4 $ seconds, then it could mean that the server that was conducting the election has failed. And a leader was not elected. Therefor the server restarts the election procedure.
+	\item If a server receives a \emph{nomination} message from a server with a priority lower than itself, then the recipient server accepts the nomination and sends a \emph{coordinator} message to all the servers with a priority lower than itself. Then the server stops the election procedure.
+	\item If a server receives a \emph{coordinator} message from a server with a priority higher than itself, then it means a new leader has been elected and the recipient server admits the new leader and stops the election procedure.
+	\item When a server recovers from a failure or when a server is starting up, it sends an \emph{iamup} message to all the servers. And then waits for a \emph{view} message for $ T2 $ seconds.
+	\item If a \emph{view} message was not received within $ T2 $ seconds, it means no other server is up in the system. Therefor the sender becomes the coordinator immediately and stops the election procedure.
+	\item If a \emph{view} message was received within $ T2 $ seconds, it compares the received view with its own view. If the views are different, it updates its view i.e it adds the new servers to its servers list. Then if the priority of the current coordinator in the system is higher than its own priority it admits the current coordinator and stops the election procedure. Otherwise, it becomes the new coordinator and sends a \emph{coordinator} message to all the servers with a lower priority and stops the election procedure.
+	\item If an \emph{iamup} message is received by a server, it sends its servers list and the current coordinator as a \emph{view} message to the sender.
+\end{enumerate}
+
+\begin{algorithm}[h]
+	\caption{Fast Bully Election Algorithm - Start failure recovery}
 	\label{fast-bully-algorithm-start-failure-recovery}
 	\begin{algorithmic}[1]
 		\BState \emph{BEGIN}
@@ -210,27 +266,27 @@ TODO FAST BULLY
 		\State A process $P_{j} \left[priority(j) > priority(i)\right]$ receives an \emph{election} message from $P_{i}$
 			\State\indent $P_{j}$ sends an \emph{answer} message to process $P_{i}$
 			\State\indent $P_{j}$ waits for either a \emph{coordinator} or a \emph{nomination} message for interval T4
-			\If {no \emph{coordinator} or \emph{nomination} message within T4}
-				\State\textproc{StartElection($P_{j}$)}
-			\Else
-			\EndIf
+			\State\indent {\textbf{if} no \emph{coordinator} or \emph{nomination} message within T4 \textbf{then}}
+				\State\indent\indent\textproc{StartElection($P_{j}$)}
 			
-			\State A process $P_{j} \left[priority(j) > priority(i)\right]$ receives a \emph{nomination} message from $P_{i}$
+			\State { A process $P_{j} \left[priority(j) > priority(i)\right]$ receives a \emph{nomination} message from $P_{i}$}
 			
 			\Comment The current election manager has decided $P_{j}$ to be the new coordinator\footnote{Current election manager is the process which started the ongoing election}.
-			\For {every process $P_{k} : priority(P_{k}) < priority(P_{j}$)}
-				\State $P_{j}$ sends \emph{coordinator} message to $P_{k}$
-				\State $P_{j}$ stops the procedure.
-			\EndFor
-			
-			\State A process $P_{j} \left[priority(j) < priority(i)\right]$ receives a \emph{coordinator} message from $P_{i}$
+				\State\indent $P_{j}$ admits itself as the new coordinator.
+				\State\indent {\textbf{for} every process $P_{k} : priority(P_{k}) < priority(P_{j}$) \textbf{do}}
+					\State\indent\indent $P_{j}$ sends \emph{coordinator} message to $P_{k}$
+					\State\indent\indent $P_{j}$ stops the procedure.
+			\State {A process $P_{j} \left[priority(j) < priority(i)\right]$ receives a \emph{coordinator} message from $P_{i}$}
 			
 			\Comment A higher priority process has been elected.
-			\State\indent $P_{j}$ admits $P_{i}$ as the new coordinator.
-			\State\indent $P_{j}$ stops election procedure.
+				\State\indent $P_{j}$ admits $P_{i}$ as the new coordinator.
+				\State\indent $P_{j}$ stops election procedure.
 		\BState \emph{END}
 	\end{algorithmic}
 \end{algorithm}
+\subsubsection{Complexity of the Fast Bully Algorithm}
+The best case scenario for the Fast Bully Algorithm is the same as the best case scenario for the Bully Algorithm (\Cref{sssec:ba-complexity}). However in the worst case scenario, FBA has a significant performance increase in terms of the number of the messages. In the worst case scenario, the server with the lowest priority (say $ P_w $)detects the current coordinator has failed and initiates the election algorithm. It sends \emph{election} messages to $ N-2 $ servers and receives $ N-2 $ \emph{answer} messages. Then it selects the highest priority server out of them and sends a $ 1 $ \emph{nomination} message. The nominated server accepts the nomination and sends $ N-2 $ \emph{coordinator} messages. Therefor totally only $ O(n) $ messages are required for FBA.
 \subsection{Experiment Results}
 \subsection{Discussion}
+The Bully algorithm is a widely used election algorithm due its fault tolerance capabilities. The Fast Bully Algorithm is a modification to the Bully Algorithm to increase the performance of it in terms of reduced number of messages and reduced response time. The number of messages has been reduced from $ O(n^2) $ to $ O(n) $ messages while the response time has been reduced by 35 to 80\%.
 \end{document}
