@@ -36,7 +36,7 @@
 \graphicspath{ {images/} }
 
 %% Reference
-\usepackage[backend=bibtex]{biblatex}
+\usepackage[backend=bibtex,style=numeric,sorting=none]{biblatex}
 \addbibresource{dareport.bib}
 
 %% For intelligent referencing sections, labels, etc.
@@ -84,10 +84,10 @@ distributed algorithms, gossip, fast-bully, leader election, consensus, eventual
 \newpage
 
 %% Section
-\subfile{sample}
+%\subfile{sample}
 
 %% Page Break
-\newpage
+%\newpage
 
 %% Conclusion Section
 \subfile{conclusion}
@@ -96,12 +96,17 @@ distributed algorithms, gossip, fast-bully, leader election, consensus, eventual
 
 %% References
 \section{References}
-\printbibliography[heading=none]
 
-\newpage
+%\printbibheading
+%\printbibliography[heading=none]
+\printbibliography[nottype=online,heading=subbibliography,title={Paper and Printed Sources}]
+\printbibliography[type=online,heading=subbibliography,title={Online Sources}]
+
+
+%\newpage
 
 %% Appendix
-\subfile{appendix}
+%\subfile{appendix}
 
 
 \end{document}
