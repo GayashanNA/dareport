@@ -1,25 +1,75 @@
 % election.tex
+% !TeX spellcheck = en_AU
 \documentclass[dareport.tex]{subfiles}
+\newlength\myindent % define a new length \myindent
+\setlength\myindent{2em} % assign the length 2em to \myindet
+\newcommand\bindent{%
+	\begingroup % starts a group (to keep changes local)
+	\setlength{\itemindent}{\myindent} % set itemindent (algorithmic internally uses a list) to the value of \mylength
+	\addtolength{\algorithmicindent}{\myindent} % adds \mylength to the default indentation used by algorithmic
+}
+\newcommand\eindent{\endgroup} % closes a group
+
 \begin{document}
 % Content here
 \section{Leader Election} \label{sec:election}
-In a distributed system, a non-concrete leader is elected in order to coordinate certain activities that manage the flawless coordination of the processes. An algorithm which is used to elect a leader is known as an election algorithm. The idea of an election is common in real world. A set of nodes that has the ability to talk to eachother, select a single node as the leader after some discussion among themselves. When the election process has finished, only one node remains as the leader, and every other node agrees and knows the identity of the leader. In a distributed system, conceptually the election process is similar in nature. 
+\subsection{What is Leader Election?}
+A leader in a distributed system is a designated node which has authority over the system. Typical responsibilities of a leader in such a system are mutual exclusion, synchronisation, scheduling, membership coordination, load balancing, etc. In a distributed system, a non-concrete leader is elected in order to coordinate such activities that manage the flawless execution of the processes/servers. An algorithm which is used to elect a leader is known as an election algorithm.
 
-First of all we have a set of assumptions regarding the nodes and the network.
-\begin{itemize}
-\item The network is fully connected.
-\item Each node in the network has a priority that can be clearly compared which each other.
-\item Each node in the network is aware of the priority of every node in the network.
-\item The network is synchronized and the delivery of messages is guaranteed.
-\item A process does not know, in advance, whether another process has failed or not.
-\end{itemize}
+The idea of an election is common in real world. A set of entities that has the ability to talk to each other, select a single entity out of them as the leader after some discussion among themselves. When the election process has finished, only one entity remains as the leader, and every other entity agrees and knows the identity of the leader. In a distributed system, conceptually the election process is similar in nature. A distributed system consists of nodes (servers/processes) which are connected via a network. Similar to the real world scenario, once a leader is elected through a leader election algorithm, all of the servers have to agree on that choice. If the leader fails or retires at some point new election is conducted to elect a new leader. The leader election policy depends on the algorithm and the requirements of the system.
 
+For Strike project we have implemented two election algorithms to elect a coordinator for our distributed system. Only one of these algorithms could be executed at a time, and is controlled by a configuration value, $election.fast.bully=\{true, false\}$. The responsibilities of the elected leader are explained further in \Cref{sec:consensus}.
 
+\subsection{Features of Leader Election}
+Each process in the distributed system has the ability to execute the leader election procedure. However it is only executed if the current leader fails or when a node detects that there's no leader in the system. Therefore in a given multiple processes could be calling on elections. However the elected leader has to be the same for all elections. A leader election algorithm must meet the following two properties \cite{coulouris}.
 
-For Strike project we implemented two election algorithms to elect a coordinator for our distributed system. The responsibilities of the elected leader are explained further in \cref{sec:consensus}. 
+Each process $p_i$ in the system has a variable $elected_i$, which contains an identifier of the elected process. Initially or when a process is entering the election process, it sets its own $elected$ variable to $\perp$ or \emph{undefined} state. So for each process $i$,
 
+\begin{equation*}
+	elected_i =
+		\begin{cases}
+			\text{P} &: \text{if a process was elected}\\
+			\text{$\perp$} &: \text{election was unsuccessful}
+		\end{cases}
+\end{equation*}
 
+During and after any execution of the algorithm, the following properties must be met.
+\begin{enumerate}
+\item Safety : Each correct process $p_i$ has $elected_i = P$ or $elected_i = \perp$. At the end of execution only one process $P$ is chosen based on the leader election policy (eg: priority of the processes) of the algorithm.
+\item Liveness : After the election all the process either chose a leader or crash.
+\end{enumerate}
+
+The leader election policy depends on the requirements of the distributed system. For an example a system may chose to select leader based on priority where a higher priority is given to a process with lowest CPU usage. In Strike, the leader election policy is based on priority of the servers where each server is given a unique integer value during server configuration.
+\subsection{Leader Election Algorithms}
 \subsection{Bully Algorithm} \label{ssec:bully}
+In this section we describe how we have implemented the Bully Algorithm, complexity of the Bully Algorithm and what are the pros and cons of the Bully Algorithm. The Bully Algorithm\cite{election} is proposed in 1982 as a form of a leader election algorithm to be used in a scenario where one or more processes (possibly including the current leader) has failed. Therefore unlike many election algorithms, Bully Algorithm is able to function even with reasonable process failures.
+
+However the original authors of the Bully Algorithm requires a set of assumptions regarding the nodes and the network\cite{election}.
+\begin{enumerate}
+	\item The network is fully connected.\label{assumption:1}
+	\item Each node in the network has a priority that can be clearly compared which each other.\label{assumption:2}
+	\item Each node in the network is aware of the priority of every node in the network (a priori knowledge).\label{assumption:3}
+	\item The network is synchronised and the delivery of messages is guaranteed.\label{assumption:4}
+	\item A process does not know, in advance, whether another process has failed or not.\label{assumption:5}
+	\item The communication subsystem, does not spontaneously generate messages.\label{assumption:6}
+	\item Each process has access to a persistent storage, where the server states are stored.\label{assumption:7}
+	\item There are no transmission errors.\label{assumption:8}
+	\item A process never pauses and always responds to incoming messages with no delay.\label{assumption:9}
+\end{enumerate}
+
+The \Cref{bully-algorithm} illustrates the pseudocode of the Bully Algorithm (BA). The steps of this algorithm and how it is implemented in Strike is explained below.
+\begin{enumerate}[leftmargin=*]
+	\item First step is to configure Strike to use the BA for leader election and to set up the required timeout values accordingly. To enable the Standard Bully Algorithm, the configuration value $election.fast.bully=false$ has to be set.
+	\item Next the timeout configurations required for the BA should be set. In Strike T1 value is set through a combination of configuration values $ alive.interval $ which means gossip interval in T seconds; and $ alive.error.factor $ which provides the factor by which the $ alive.interval $ is multiplied. So $ T1= alive.interval \times alive.error.factor $. Timeout values T2 and T3 in seconds, should be set respectively via $ election.answer.timeout $ and $ election.coordinator.timeout $. T1, T2, and T3 values should be the same for all the processes.
+	\item When a server detects that the current coordinator has not responded within \emph{T1} seconds, it sends an \emph{election} message to every server with a priority higher than itself. And then it begins waiting for T2 seconds for an \emph{answer} message from another server.
+	\item If the server did not receive any \emph{answer} message from another server, then it means there are no higher priority servers in the current system (Assumption \ref{assumption:9}). Therefor it appoints itself as the current coordinator and sends a \emph{coordinator} message to every server with a priority lower than itself. And then stops the election procedure.
+	\item If an \emph{answer} message has received from one or more servers, the server begins waiting for \emph{T3} seconds for a \emph{coordinator} message from one of those servers.
+	\item If a \emph{coordinator} message has received within \emph{T3} seconds, then it means a server with a higher priority has already elected itself as the current leader. Therefor the server admits the new coordinator and stops the election procedure.
+	\item If no \emph{coordinator} message is received within \emph{T3} seconds, then it means one or more higher priority servers that previously sent an \emph{answer} message has failed during the election. Therefor the server restarts the election procedure.
+	\item A process may receive an \emph{election} message from a server with a priority lower than itself. This means the sender has detected that the current leader in the system has failed and a new leader has to be elected. Then the recipient server will send an \emph{answer} message to the sender. And then it begins its own election procedure (Steps 3 to 7).
+	\item A process may receive a \emph{coordinator} message from a server with a priority higher than itself. This means a new coordinator has been elected in the system. Therefore the recipient admits the new coordinator and stops any election procedure it is running.
+	\item When a server is starting, for every server the current coordinator is undefined. After the startup, when the configurations are loaded and the connections have been set up each process will run the leader election procedure (Steps 3 to 7) proposing itself as the leader.
+\end{enumerate}
 
 \begin{algorithm}[h]
 	\caption{Bully Election Algorithm}
@@ -73,7 +123,7 @@ For Strike project we implemented two election algorithms to elect a coordinator
 \subsection{Fast Bully Algorithm} \label{ssec:fast-bully}
 
 TODO FAST BULLY
-\begin{algorithm}[h]
+\begin{algorithm}[H]
 	\caption{Fast Bully Election Algorithm - Starting failure recovery}
 	\label{fast-bully-algorithm-start-failure-recovery}
 	\begin{algorithmic}[1]
@@ -106,7 +156,7 @@ TODO FAST BULLY
 		\BState \emph{END}
 	\end{algorithmic}
 \end{algorithm}
-\begin{algorithm}[h]
+\begin{algorithm}[H]
 	\caption{Fast Bully Election Algorithm -  Start election}
 	\label{fast-bully-algorithm-start-election}
 	\begin{algorithmic}[1]
@@ -146,7 +196,7 @@ TODO FAST BULLY
 		\BState \emph{END}
 	\end{algorithmic}
 \end{algorithm}
-\begin{algorithm}[h]
+\begin{algorithm}[H]
 	\caption{Fast Bully Election Algorithm}
 	\label{fast-bully-algorithm}
 	\begin{algorithmic}[1]
@@ -164,13 +214,15 @@ TODO FAST BULLY
 				\State\textproc{StartElection($P_{j}$)}
 			\Else
 			\EndIf
+			
 			\State A process $P_{j} \left[priority(j) > priority(i)\right]$ receives a \emph{nomination} message from $P_{i}$
 			
-			\Comment The current election manager has decided $P_{j}$ to be the new coordinator.
+			\Comment The current election manager has decided $P_{j}$ to be the new coordinator\footnote{Current election manager is the process which started the ongoing election}.
 			\For {every process $P_{k} : priority(P_{k}) < priority(P_{j}$)}
 				\State $P_{j}$ sends \emph{coordinator} message to $P_{k}$
 				\State $P_{j}$ stops the procedure.
 			\EndFor
+			
 			\State A process $P_{j} \left[priority(j) < priority(i)\right]$ receives a \emph{coordinator} message from $P_{i}$
 			
 			\Comment A higher priority process has been elected.
