@@ -5,8 +5,8 @@
 \documentclass[11pt]{article}
 \usepackage{dareport}
 \sloppy
-\setlength\footskip{28pt}
-\setlength\textheight{9.0in}
+%\setlength\footskip{28pt}
+%\setlength\textheight{9.0in}
 \setlength\titlebox{1.0in}
 
 %% START PUT ANY \usepackage{coo_package} AND ITS SETTINGS HERE
@@ -48,7 +48,7 @@
 \author{San Kho Lin \\ \texttt{(829463)} \And
 Gayashan N. Amarasinghe \\ \texttt{(827864)} \And
 Yixin Chen \\ \texttt{(522819)} \AND
-(sanl1, gamarasinghe, a.chen15)@student.unimelb.edu.au}
+(sanl1, gamarasinghe, alachen)@student.unimelb.edu.au}
 
 \begin{document}
 \maketitle
@@ -56,13 +56,13 @@ Yixin Chen \\ \texttt{(522819)} \AND
 
 %% START MAIN CONTENT HERE
 
-\begin{abstract}
-Contrast to single machine algorithm, the design of distributed algorithm involves an extensive consideration on communication channel as algorithm steps --- which to say, to initialize variable x in the distributed algorithm, the process might start with its peer process event communication to set the x value!
-\end{abstract}
+%\begin{abstract}
+%Contrast to single machine algorithm, the design of distributed algorithm involves an extensive %consideration on communication channel as algorithm steps --- which to say, to initialize variable x %in the distributed algorithm, the process might start with its peer process event communication to %set the x value!
+%\end{abstract}
 
-\begin{keywords} 
-distributed algorithms, gossip, fast-bully, leader election, consensus, eventual consistency, reliable communication, messaging protocol, multicast, udp, tcp, JMPP
-\end{keywords}
+%\begin{keywords} 
+%distributed algorithms, gossip, fast-bully, leader election, consensus, eventual consistency, %reliable communication, messaging protocol, multicast, udp, tcp, JMPP
+%\end{keywords}
 
 
 %% App Logic Section
@@ -81,13 +81,13 @@ distributed algorithms, gossip, fast-bully, leader election, consensus, eventual
 \subfile{consensus}
 
 %% Page Break
-\newpage
+%\newpage
 
 %% Section
 %\subfile{sample}
 
 %% Page Break
-%\newpage
+\newpage
 
 %% Conclusion Section
 \subfile{conclusion}
@@ -102,11 +102,10 @@ distributed algorithms, gossip, fast-bully, leader election, consensus, eventual
 \printbibliography[nottype=online,heading=subbibliography,title={Paper and Printed Sources}]
 \printbibliography[type=online,heading=subbibliography,title={Online Sources}]
 
-
-%\newpage
+\newpage
 
 %% Appendix
-%\subfile{appendix}
+\subfile{appendix}
 
 
 \end{document}

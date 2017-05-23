@@ -73,55 +73,55 @@ The \Cref{bully-algorithm} illustrates the pseudocode of the Bully Algorithm (BA
 	\item When a server is starting, for every server the current coordinator is undefined. After the startup, when the configurations are loaded and the connections have been set up each process will run the leader election procedure (Steps 3 to 7) proposing itself as the leader.
 \end{enumerate}
 
-\begin{algorithm}[H]
-	\caption{Bully Election Algorithm}
-	\label{bully-algorithm}
-	\begin{algorithmic}[1]
-		\BState \emph{BEGIN}
-		\Procedure{StartElection}{$P_{i}$}
-		\For {every process $P_{j} : priority(P_{j}) > priority(P_{i}$)}
-			\State $P_{i}$ sends \emph{election} message to $P_{j}$
-		\EndFor
-		\State $P_{i}$ waits for \emph{answer} message for the interval T2.
-		\If {no \emph{answer} message within timeout T2}
-		
-		\Comment No process with priority higher than $P_{i}$ exists.
-		
-		\Comment $P_{i}$ is the coordinator.
-			\For {every process $P_{j} : priority(P_{j}) < priority(P_{i}$)}
-				\State $P_{i}$ sends \emph{coordinator} message to $P_{j}$
-			\EndFor
-			\State $P_{i}$ stops election procedure.
-		\Else
-		
-		\Comment A higher priority process has replied.
-			\State $P_{i}$ waits for \emph{coordinator} message for the interval T3.
-		\If {$P_{i}$ receives \emph{coordinator} message from $P_{j}$ within timeout T3}
-		
-		\Comment A higher priority process has elected itself as the leader.
-			\State $P_{i}$ admits $P_{j}$ as the new coordinator.
-			\State $P_{i}$ stops election procedure.
-		\Else
-			\State \textproc{StartElection($P_{i}$)}
-			\Comment $P_{i}$ restarts the election
-		\EndIf
-		\EndIf
-		\EndProcedure
-		\State A process $P_{i}$ does not receive a response within T1 from the coordinator.
-		
-		\Comment Current coordinator has failed.
-		\State\indent \textproc{StartElection($P_{i}$)}
-		\State A process $P_{j} \left[priority(j) > priority(i)\right]$ receives an \emph{election} message from $P_{i}$
-		\State\indent $P_{j}$ sends an \emph{answer} message to $P_{i}$
-		\State\indent \textproc{StartElection($P_{j}$)}
-		\State A process $P_{j} \left[priority(j) < priority(i)\right]$ receives a \emph{coordinator} message from $P_{i}$
-		
-		\Comment A higher priority process has been elected.
-		\State\indent $P_{j}$ admits $P_{i}$ as the new coordinator.
-		\State\indent $P_{j}$ stops election procedure.
-		\BState \emph{END}
-	\end{algorithmic}
-\end{algorithm}
+%\begin{algorithm}[H]
+%	\caption{Bully Election Algorithm}
+%	\label{bully-algorithm}
+%	\begin{algorithmic}[1]
+%		\BState \emph{BEGIN}
+%		\Procedure{StartElection}{$P_{i}$}
+%		\For {every process $P_{j} : priority(P_{j}) > priority(P_{i}$)}
+%			\State $P_{i}$ sends \emph{election} message to $P_{j}$
+%		\EndFor
+%		\State $P_{i}$ waits for \emph{answer} message for the interval T2.
+%		\If {no \emph{answer} message within timeout T2}
+%		
+%		\Comment No process with priority higher than $P_{i}$ exists.
+%		
+%		\Comment $P_{i}$ is the coordinator.
+%			\For {every process $P_{j} : priority(P_{j}) < priority(P_{i}$)}
+%				\State $P_{i}$ sends \emph{coordinator} message to $P_{j}$
+%			\EndFor
+%			\State $P_{i}$ stops election procedure.
+%		\Else
+%		
+%		\Comment A higher priority process has replied.
+%			\State $P_{i}$ waits for \emph{coordinator} message for the interval T3.
+%		\If {$P_{i}$ receives \emph{coordinator} message from $P_{j}$ within timeout T3}
+%		
+%		\Comment A higher priority process has elected itself as the leader.
+%			\State $P_{i}$ admits $P_{j}$ as the new coordinator.
+%			\State $P_{i}$ stops election procedure.
+%		\Else
+%			\State \textproc{StartElection($P_{i}$)}
+%			\Comment $P_{i}$ restarts the election
+%		\EndIf
+%		\EndIf
+%		\EndProcedure
+%		\State A process $P_{i}$ does not receive a response within T1 from the coordinator.
+%		
+%		\Comment Current coordinator has failed.
+%		\State\indent \textproc{StartElection($P_{i}$)}
+%		\State A process $P_{j} \left[priority(j) > priority(i)\right]$ receives an \emph{election} message from $P_{i}$
+%		\State\indent $P_{j}$ sends an \emph{answer} message to $P_{i}$
+%		\State\indent \textproc{StartElection($P_{j}$)}
+%		\State A process $P_{j} \left[priority(j) < priority(i)\right]$ receives a \emph{coordinator} message from $P_{i}$
+%		
+%		\Comment A higher priority process has been elected.
+%		\State\indent $P_{j}$ admits $P_{i}$ as the new coordinator.
+%		\State\indent $P_{j}$ stops election procedure.
+%		\BState \emph{END}
+%	\end{algorithmic}
+%\end{algorithm}
 
 \subsubsection{Complexity of the Bully Algorithm}\label{sssec:ba-complexity}
 In the best case scenario, only the server with the second highest priority detects that the current coordinator is down and sends an \emph{election} message to the servers with higher priority than itself. But since the only server with a higher priority is the current coordinator who has failed, then after timeout $ T2 $ it can elect itself as the new coordinator and inform all the subordinate servers about the new coordinator. Therefor in the best case only $ N-2 $ messages are needed to be sent.
@@ -141,14 +141,9 @@ In addition to the 3 types of messages used in BA in \Cref{ba-message-types}, FB
 	e.g. :
 	\begin{small}
 		\begin{verbatim}
-		{
-		"type":"serverlist", "coordinatorid" : "victor",
-		"servers": 
-		[ 	
-		{"serverid":"victor", "address":"192.168.0.1", "port":"4444"}, 
-		{"serverid":"windu", "address":"192.168.0.2", "port":"4444"} 
-		]
-		}
+		{ "type":"serverlist", "coordinatorid":"victor", "servers": 
+		    [ {"serverid":"victor", "address":"192.168.0.1", "port":"4444"},
+		  	  {"serverid":"windu", "address":"192.168.0.2", "port":"4444"} ]}
 		\end{verbatim}
 	\end{small}
 \end{itemize}
@@ -173,113 +168,117 @@ The \Cref{fast-bully-algorithm-start-failure-recovery,fast-bully-algorithm-start
 	\item If an \emph{iamup} message is received by a server, it sends its servers list and the current coordinator as a \emph{view} message to the sender.
 \end{enumerate}
 
-\begin{algorithm}[h]
-	\caption{Fast Bully Election Algorithm - Start failure recovery}
-	\label{fast-bully-algorithm-start-failure-recovery}
-	\begin{algorithmic}[1]
-		\BState \emph{BEGIN}
-		\Procedure{StartFailureRecovery}{$P_{i}$}
-		\State $P_{i}$ sends \emph{iamup} message to every process
-		\State $P_{i}$ waits for \emph{view} message for interval T2
-		\If{no \emph{view} message within T2}
-		
-		\Comment $P_{i}$ is the coordinator
-		\State Stop the procedure
-		\Else
-		\State $P_{i}$ compares the received views with its view.
-		\If {view of $P_{i}$ $\ne$ receieved view}
-			\State $P_{i}$ updates its view.
-		\EndIf
-		\If {$priorty(P_{i}) > priority(P_{j})$ $\forall P_{j}$ in its view}
-		
-		\Comment $P_{i}$ is the highest priority process in the current network.
-			\For {every process $P_{j} : priority(P_{j}) < priority(P_{i}$)}
-				\State $P_{i}$ sends \emph{coordinator} message to $P_{j}$
-				\State $P_{i}$ stops the procedure.
-			\EndFor
-		\Else
-			\State $P_{i}$ admits the highest priority process in its view as the coordinator.
-			\State $P_{i}$ stops the procedure.
-		\EndIf
-		\EndIf
-		\EndProcedure
-		\BState \emph{END}
-	\end{algorithmic}
-\end{algorithm}
-\begin{algorithm}[H]
-	\caption{Fast Bully Election Algorithm -  Start election}
-	\label{fast-bully-algorithm-start-election}
-	\begin{algorithmic}[1]
-		\BState \emph{BEGIN}
-		\Procedure{StartElection}{$P_{i}$}
-			\For {every process $P_{j} : priority(P_{j}) > priority(P_{i}$)}
-				\State $P_{i}$ sends \emph{election} message to $P_{j}$
-			\EndFor
-			\State $P_{i}$ waits for \emph{answer} message for the interval T2.
-			\If {no \emph{answer} message within timeout T2}
-				
-			\Comment No process with priority higher than $P_{i}$ exists.
-				
-			\Comment $P_{i}$ is the coordinator.
-				\For {every process $P_{j} : priority(P_{j}) < priority(P_{i}$)}
-					\State $P_{i}$ sends \emph{coordinator} message to $P_{j}$
-				\EndFor
-				\State $P_{i}$ stops election procedure.
-			\Else
-			
-			\Comment Processes with higher priority have answered.
-				\State add answered process to answered list.
-				\State send \emph{nomination} message to $P_{j}$ : $priority(P_{j}) > priority(P_{k})$ $\forall P_{k}$ that answered  $P_{i}$ \label{send-nomination}
-				\State $P_{i}$ waits for \emph{coordinator} message for interval T3.
-				\If {A coordinator message from $P_{j}$ is received}
-					\State $P_{i}$ admits $P_{j}$ as the new coordinator.
-					\State $P_{i}$ stops election procedure.
-				\Else
-					\State Remove $P_{j}$ from answered list.
-					\State Repeat \cref{send-nomination} for the next $P_{j}$ in the answered list.
-					\If {Answered list is empty}
-						\State \textproc{StartElection($P_{j}$)}
-					\EndIf
-				\EndIf
-			\EndIf
-		\EndProcedure
-		\BState \emph{END}
-	\end{algorithmic}
-\end{algorithm}
-\begin{algorithm}[H]
-	\caption{Fast Bully Election Algorithm}
-	\label{fast-bully-algorithm}
-	\begin{algorithmic}[1]
-		\BState \emph{BEGIN}
-		\State A process $P_{i}$ recovers from failure
-			\State\indent\textproc{StartFailureRecovery($P_{i}$)}
-		\State A process $P_{i}$ may receive an IamUp message from $P_{j}$
-			\State\indent $P_{i}$ sends view message to $P_{j}$.
-		\State A process $P_{i}$ does not receive a response within T1 from the coordinator
-			\State\indent\textproc{StartElection($P_{i}$)}
-		\State A process $P_{j} \left[priority(j) > priority(i)\right]$ receives an \emph{election} message from $P_{i}$
-			\State\indent $P_{j}$ sends an \emph{answer} message to process $P_{i}$
-			\State\indent $P_{j}$ waits for either a \emph{coordinator} or a \emph{nomination} message for interval T4
-			\State\indent {\textbf{if} no \emph{coordinator} or \emph{nomination} message within T4 \textbf{then}}
-				\State\indent\indent\textproc{StartElection($P_{j}$)}
-			
-			\State { A process $P_{j} \left[priority(j) > priority(i)\right]$ receives a \emph{nomination} message from $P_{i}$}
-			
-			\Comment The current election manager has decided $P_{j}$ to be the new coordinator\footnote{Current election manager is the process which started the ongoing election}.
-				\State\indent $P_{j}$ admits itself as the new coordinator.
-				\State\indent {\textbf{for} every process $P_{k} : priority(P_{k}) < priority(P_{j}$) \textbf{do}}
-					\State\indent\indent $P_{j}$ sends \emph{coordinator} message to $P_{k}$
-					\State\indent\indent $P_{j}$ stops the procedure.
-			\State {A process $P_{j} \left[priority(j) < priority(i)\right]$ receives a \emph{coordinator} message from $P_{i}$}
-			
-			\Comment A higher priority process has been elected.
-				\State\indent $P_{j}$ admits $P_{i}$ as the new coordinator.
-				\State\indent $P_{j}$ stops election procedure.
-		\BState \emph{END}
-	\end{algorithmic}
-\end{algorithm}
+%\begin{algorithm}[h]
+%	\caption{Fast Bully Election Algorithm - Start failure recovery}
+%	\label{fast-bully-algorithm-start-failure-recovery}
+%	\begin{algorithmic}[1]
+%		\BState \emph{BEGIN}
+%		\Procedure{StartFailureRecovery}{$P_{i}$}
+%		\State $P_{i}$ sends \emph{iamup} message to every process
+%		\State $P_{i}$ waits for \emph{view} message for interval T2
+%		\If{no \emph{view} message within T2}
+%		
+%		\Comment $P_{i}$ is the coordinator
+%		\State Stop the procedure
+%		\Else
+%		\State $P_{i}$ compares the received views with its view.
+%		\If {view of $P_{i}$ $\ne$ receieved view}
+%			\State $P_{i}$ updates its view.
+%		\EndIf
+%		\If {$priorty(P_{i}) > priority(P_{j})$ $\forall P_{j}$ in its view}
+%		
+%		\Comment $P_{i}$ is the highest priority process in the current network.
+%			\For {every process $P_{j} : priority(P_{j}) < priority(P_{i}$)}
+%				\State $P_{i}$ sends \emph{coordinator} message to $P_{j}$
+%				\State $P_{i}$ stops the procedure.
+%			\EndFor
+%		\Else
+%			\State $P_{i}$ admits the highest priority process in its view as the coordinator.
+%			\State $P_{i}$ stops the procedure.
+%		\EndIf
+%		\EndIf
+%		\EndProcedure
+%		\BState \emph{END}
+%	\end{algorithmic}
+%\end{algorithm}
+
+%\begin{algorithm}[H]
+%	\caption{Fast Bully Election Algorithm -  Start election}
+%	\label{fast-bully-algorithm-start-election}
+%	\begin{algorithmic}[1]
+%		\BState \emph{BEGIN}
+%		\Procedure{StartElection}{$P_{i}$}
+%			\For {every process $P_{j} : priority(P_{j}) > priority(P_{i}$)}
+%				\State $P_{i}$ sends \emph{election} message to $P_{j}$
+%			\EndFor
+%			\State $P_{i}$ waits for \emph{answer} message for the interval T2.
+%			\If {no \emph{answer} message within timeout T2}
+%				
+%			\Comment No process with priority higher than $P_{i}$ exists.
+%				
+%			\Comment $P_{i}$ is the coordinator.
+%				\For {every process $P_{j} : priority(P_{j}) < priority(P_{i}$)}
+%					\State $P_{i}$ sends \emph{coordinator} message to $P_{j}$
+%				\EndFor
+%				\State $P_{i}$ stops election procedure.
+%			\Else
+%			
+%			\Comment Processes with higher priority have answered.
+%				\State add answered process to answered list.
+%				\State send \emph{nomination} message to $P_{j}$ : $priority(P_{j}) > priority(P_{k})$ $\forall P_{k}$ that answered  $P_{i}$ \label{send-nomination}
+%				\State $P_{i}$ waits for \emph{coordinator} message for interval T3.
+%				\If {A coordinator message from $P_{j}$ is received}
+%					\State $P_{i}$ admits $P_{j}$ as the new coordinator.
+%					\State $P_{i}$ stops election procedure.
+%				\Else
+%					\State Remove $P_{j}$ from answered list.
+%					\State Repeat \cref{send-nomination} for the next $P_{j}$ in the answered list.
+%					\If {Answered list is empty}
+%						\State \textproc{StartElection($P_{j}$)}
+%					\EndIf
+%				\EndIf
+%			\EndIf
+%		\EndProcedure
+%		\BState \emph{END}
+%	\end{algorithmic}
+%\end{algorithm}
+
+%\begin{algorithm}[H]
+%	\caption{Fast Bully Election Algorithm}
+%	\label{fast-bully-algorithm}
+%	\begin{algorithmic}[1]
+%		\BState \emph{BEGIN}
+%		\State A process $P_{i}$ recovers from failure
+%			\State\indent\textproc{StartFailureRecovery($P_{i}$)}
+%		\State A process $P_{i}$ may receive an IamUp message from $P_{j}$
+%			\State\indent $P_{i}$ sends view message to $P_{j}$.
+%		\State A process $P_{i}$ does not receive a response within T1 from the coordinator
+%			\State\indent\textproc{StartElection($P_{i}$)}
+%		\State A process $P_{j} \left[priority(j) > priority(i)\right]$ receives an \emph{election} message from $P_{i}$
+%			\State\indent $P_{j}$ sends an \emph{answer} message to process $P_{i}$
+%			\State\indent $P_{j}$ waits for either a \emph{coordinator} or a \emph{nomination} message for interval T4
+%			\State\indent {\textbf{if} no \emph{coordinator} or \emph{nomination} message within T4 \textbf{then}}
+%				\State\indent\indent\textproc{StartElection($P_{j}$)}
+%			
+%			\State { A process $P_{j} \left[priority(j) > priority(i)\right]$ receives a \emph{nomination} message from $P_{i}$}
+%			
+%			\Comment The current election manager has decided $P_{j}$ to be the new coordinator\footnote{Current election manager is the process which started the ongoing election}.
+%				\State\indent $P_{j}$ admits itself as the new coordinator.
+%				\State\indent {\textbf{for} every process $P_{k} : priority(P_{k}) < priority(P_{j}$) \textbf{do}}
+%					\State\indent\indent $P_{j}$ sends \emph{coordinator} message to $P_{k}$
+%					\State\indent\indent $P_{j}$ stops the procedure.
+%			\State {A process $P_{j} \left[priority(j) < priority(i)\right]$ receives a \emph{coordinator} message from $P_{i}$}
+%			
+%			\Comment A higher priority process has been elected.
+%				\State\indent $P_{j}$ admits $P_{i}$ as the new coordinator.
+%				\State\indent $P_{j}$ stops election procedure.
+%		\BState \emph{END}
+%	\end{algorithmic}
+%\end{algorithm}
+
 \subsubsection{Complexity of the Fast Bully Algorithm}
 The best case scenario for the Fast Bully Algorithm is the same as the best case scenario for the Bully Algorithm (\Cref{sssec:ba-complexity}). However in the worst case scenario, FBA has a significant performance increase in terms of the number of the messages. In the worst case scenario, the server with the lowest priority detects the current coordinator has failed and initiates the election algorithm. It sends \emph{election} messages to $ N-2 $ servers and receives $ N-2 $ \emph{answer} messages. Then it selects the highest priority server out of them and sends a $ 1 $ \emph{nomination} message. The nominated server accepts the nomination and sends $ N-2 $ \emph{coordinator} messages. Therefor totally only $ O(n) $ messages are required for FBA.
+
 \subsection{How Leader Election is implemented in Strike}
 In Strike, we have set up a gossip based reliable failure detector to initiate the leader election in case the leader is suspected to be failed. For the leader we do not go through the consensus process since the leader is required to initiate the consensus process (explained more in \Cref{sec:consensus}). If the leader is suspected to have failed, the detected server will immediately start the election process. This has two advantages. First one is if the suspected leader has really failed, it allows a new leader to be elected immediately. Second advantage is if the suspected leader has not failed, it can participate in the leader election procedure and make sure that it is reelected as the leader. Therefor always the correct leader is elected. 
 

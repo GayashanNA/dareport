@@ -3,6 +3,14 @@
 \begin{document}
 % Content here
 \section{Conclusion}
-Concluding text.
+
+Contrast to single machine algorithm, the designing of distributed algorithm involves an extensive consideration on communication protocol as algorithm steps --- which to say, to initialize variable \emph{X} in the distributed algorithm, the process might start with its peer process event notification to set the \emph{X} value. This also highlights that the choice of group communication pattern which lay the foundation of developing distributed algorithms such as Multicast, Broadcast or Unicast.
+
+Furthermore, it is inevitable to make use of \textbf{\emph{timeout}} factor for orchestrating of  distributed processes coordination. This is observed in such that even a reliable connection never guarantee successful delivery of message to the destined application process. In such case, the \textbf{\textit{timeout}} factor on the coordinating process to make sure the terminal condition of the distributed algorithm has reached.
+
+In our final experimentation deployment on Strike System with 4 server-nodes cluster setup, we observe the eventual consistency of how these algorithms work together to reach reliable fault-tolerant consistent state. This is in deed a surprise finding for us. The fact that these algorithms works on timed-interval and timeout parameters, a careful fine tuning of these parameters give how we like to run the cluster in a specify fault-tolerant criterion and boundary. It also enlighten us on how we can apply a combination of these algorithms on anther type of distributed applications development such as database cluster, data replication server, distributed game system and so on.
+
+By attempting on developing the chosen set of distributed algorithms --- Failure Detection, Leader Election, Consensus as well as the choice of Strike Chat Messaging Application --- we achieve the learning objective of this project and able to demonstrate that we have implemented the chosen algorithms in most realistic setting.
+
 
 \end{document}

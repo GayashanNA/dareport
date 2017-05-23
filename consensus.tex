@@ -2,13 +2,112 @@
 \documentclass[dareport.tex]{subfiles}
 \begin{document}
 % Content here
-\section{Distributed Consensus} \label{sec:consensus}
-Distributed Consensus Distributed Consensus
-Distributed Consensus
-Distributed Consensus
-Distributed Consensus
-Distributed Consensus
-Distributed Consensus
-Distributed Consensus
-Distributed Consensus
+\section{Consensus} \label{sec:consensus}
+
+In this section, we will discuss distributed consensus agreement that are crucial to Strike system server processes.
+
+\subsection{Global Uniqueness}\label{globaluniqueness}
+As we recall, it is the requirement for server processes to ensure the global uniqueness of client nicknames and chat rooms. To maintain consistency of each \textbf{ServerState} among servers, these server processes need to communicate with each other to reach consensus. The approach to reach consensus is to use protocols that consists of two phases: 
+\begin{itemize}[leftmargin=*]
+\item The lock (voting) phase, in which a coordinating server sends a lock request, \textbf{lockidentity} or \textbf{lockroomid}, to all other servers which in turn reply with their vote to either allow or deny the creation of the new nickname or chat room, based on their local \textbf{ServerState} (local list of client identities and list of chat rooms).
+
+\item The release (commit) phase, in which a coordinating server decides whether to allow (if all servers vote to allow) or to deny (if at least one server votes to deny) the creation of the new nickname or chat room. Regardless of the result, a coordinating server notifies the result to all the other servers by sending them a \textbf{releaseidentity} or \textbf{releaseroomid} message.
+\end{itemize}
+We will go through the consensus algorithm for create room protocol in the following. The same algorithm steps are performed for \textbf{Create New Identity/Nickname Protocol}.
+\\
+\\
+\noindent Consensus Algorithm: \textbf{Create Room Protocol}
+
+\begin{enumerate}[leftmargin=*]
+
+\item The client ask \verb|server1| to create a chat room "joke" and, send to server as a JSON message:
+\begin{small}
+\begin{verbatim}
+{"type":"createroom", "roomid":"joke"}
+\end{verbatim}
+\end{small}
+
+\item The \verb|server1| then sends \textbf{lockroomid} protocol to all other servers to lock the requested \textbf{roomid}:
+\begin{small}
+\begin{verbatim}
+{"type":"lockroomid", "serverid":"1", "roomid":"joke"}
+\end{verbatim}
+\end{small}
+Here \textbf{serverid} corresponds to the ID of the coordinating server who seeks for consensus.
+
+\item The receiving servers response with their vote. If they approve the lock:
+\begin{small}
+\begin{verbatim}
+{"type":"lockroomid", "serverid":"2", "roomid":"joke", "locked":"true"}
+\end{verbatim}
+\end{small}
+If they deny the lock then reply \textbf{locked} is \textbf{false}. Here \textbf{serverid} corresponds to the ID of the participating server who vote for consensus.
+
+\item When the coordinating \verb|server1| has received all of the vote responses, it aggregates the votes and decides whether to create the requested "joke" room, or not. Regardless of which decision it may take, it still relays \textbf{releaseroomid} protocol to other servers. When all the servers have allowed the lock, it sends to all its peer servers:
+\begin{small}
+\begin{verbatim}
+{"type":"releaseroomid", "serverid":"1", "roomid":"jokes", "approved":"true"}
+\end{verbatim}
+\end{small}
+Otherwise \textbf{approved} is \textbf{false} when at least one server has denied the lock and reach no consensus.
+
+\item When participating servers are receiving a \textbf{releaseroomid} message with \verb|"approved":"true"| must then release the lock and update their \textbf{ServerState} with a new chat room with ID "joke" that has created in \verb|server1|. No further action require for \verb|"approved":"false"| as no consensus has reached.
+
+\item The coordinating \verb|server1| then replies to the client if the room is successfully created:
+\begin{small}
+\begin{verbatim}
+{"type":"createroom", "roomid":"joke", "approved":"true"}
+\end{verbatim}
+\end{small}
+Otherwise \verb|"approved":"false"| if the room is not created.
+
+\end{enumerate}
+
+\subsection{Leader based Consensus on Failure Detection}
+As we recall, we have Gossip based Failure Detector which produce global \textbf{SuspectList} of possibly failed-crashes servers. Also, we have Fast-Bully based Leader Election and, have a coordinator among server cluster. In previous \Cref{globaluniqueness}, we have shown the distributed consensus for globally agreed values on chat room name and chat nickname among servers by using two phases approach --- voting and commit. However, this time we will use leader based consensus to remove the server(s) on failure detection. This approach make use of all the knowledge we have learnt so far. The detail of this consensus algorithm steps are as follow.
+
+\begin{enumerate}[leftmargin=*]
+\item The consensus algorithm has two parameters: \emph{consensus.interval} to run at every timed-interval and \emph{consensus.vote.duration} to wait for collecting participating servers vote messages.
+
+\item When consensus is up for next interval, it first check any on going consensus is running. If this is true, it will skip this round. Otherwise it will proceed performing consensus procedure.
+
+\item Only the leader has authority to initiate the consensus voting procedure. Let the server process \textbf{P} be the leader. \textbf{P} first initialize the vote set \verb|{"YES":0, "NO":0}|. 
+
+\item Next \textbf{P} check its own \textbf{ServerState} about \textbf{SuspectList}. Once \textbf{P} find the first one of the suspected-failed server, it casts its own vote to vote set \verb|{"YES":1, "NO":0}| and, it will call for voting to remove the suspected-failed server by sending message to all servers:
+\begin{small}
+\begin{verbatim}
+{"type":"startvote", "serverid":"1", "suspectserverid":"3"}
+\end{verbatim}
+\end{small}
+
+\item All other servers which is receiving \textbf{startvote} protocol message shall response their view of \textbf{SuspectList} on the suspected failed-server and, reply:
+\begin{small}
+\begin{verbatim}
+{"type":"answervote", "suspectserverid":"3", "vote":"YES", "votedby":"2"}
+\end{verbatim}
+\end{small}
+Otherwise, \verb|"vote":"NO"| if the \textbf{suspectserverid} is not in their \textbf{SuspectList}.
+
+\item \textbf{P} wait for \emph{consensus.vote.duration}. When this time is up, \textbf{P} consolidate the vote set. If YES vote is more than NO, it will remove \verb|server3| from its own \textbf{ServerState} and broadcast notify server down message to all servers:
+\begin{small}
+\begin{verbatim}
+{"type":"notifyserverdown", "serverid":"3"}
+\end{verbatim}
+\end{small}
+No further action has taken if vote set is neutral or, more NO vote than YES vote.
+
+\item All other servers which is receiving \textbf{notifyserverdown} should remove the server from their \textbf{ServerState}. All chat rooms on that server should be removed from the list and clients should not be redirected to that server any more.
+
+\end{enumerate}
+
+\subsection{Observation}
+
+In our experiment, we find that both of these algorithms meet the requirements of a consensus algorithm\cite{coulouris} in such that the following conditions hold for every execution of them:
+\begin{itemize}
+\item \emph{Termination: Eventually each correct process sets its decision variable.}
+\item \emph{Agreement: The decision value of all correct processes is the same: if $p_{i}$ and $p_{j}$ are correct and have entered the decided state, then $d_{i} = d_{j}   (i,j) = 1,2,...,N)$.}
+\item \emph{Integrity: If the correct processes all proposed the same value, then any correct process in the decided state has chosen that value.}
+
+\end{itemize}
+
 \end{document}

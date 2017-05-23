@@ -13,13 +13,13 @@
 \section{Application Logic}
 The system architecture of the Strike System starts with simple and straight forwards approach. Figure~\ref{fig:strike_arch} shows the basic building block of clients-to-servers and server-to-server processes, and their communication flow.
 
-\begin{figure}[h]
-\includegraphics[scale=0.9]{strike_architecture.jpg}
-\centering
-\caption{Basic Strike Architecture}
-\label{fig:strike_arch}
-\centering
-\end{figure}
+%\begin{figure}[h]
+%\includegraphics[scale=0.9]{strike_architecture.jpg}
+%\centering
+%\caption{Basic Strike Architecture}
+%\label{fig:strike_arch}
+%\centering
+%\end{figure}
 
 \subsection{Requirement Specification}
 To begin with, we will discuss the requirement specification and assumption of the application logic. 
@@ -67,13 +67,8 @@ The client can ask for the list of servers in the system and, send to server as 
 The server replies with a list of all the servers in the system:
 \begin{small}
 \begin{verbatim}
-{
-    "type":"serverlist", "servers": 
-    [ 
-        {"serverid":"1", "address":"192.168.0.1", "port":"4444"}, 
-        {"serverid":"2", "address":"192.168.0.2", "port":"4444"}
-    ]
-}
+{"type":"serverlist", "servers": [ {"serverid":"1", "address":"192.168.0.1", "port":"4444"}, 
+      {"serverid":"2", "address":"192.168.0.2", "port":"4444"} ]}
 \end{verbatim}
 \end{small}
 In this example, the generated protocols are \verb|type|, \verb|listserver|, \verb|serverlist|, \verb|servers|, \verb|serverid|, \verb|address| and \verb|port|. This is a simple client-server protocol example. We will see a more moderate complex protocol example in next.
@@ -104,19 +99,15 @@ However, if the authentication is success, the chat server response to the clien
 And, at the same time, the chat server also send to all other servers with message:
 \begin{small}
 \begin{verbatim}
-{
-    "type":"notifyusersession", "sessionid":"ba64077b-85b4-40f0-a5ac-480ad3e341b3", 
-    "username":"victor", "serverid":"1", "status":"login"
-}
+{"type":"notifyusersession", "sessionid":"ba64077b-85b4-40f0-a5ac-480ad3e341b3", 
+    "username":"victor", "serverid":"1", "status":"login"}
 \end{verbatim}
 \end{small}
 When the user logout, the chat server send to all other servers with message:
 \begin{small}
 \begin{verbatim}
-{
-    "type":"notifyusersession", "sessionid":"ba64077b-85b4-40f0-a5ac-480ad3e341b3",
-    "username":"victor", "serverid":"1", "status":"logout"
-}
+{"type":"notifyusersession", "sessionid":"ba64077b-85b4-40f0-a5ac-480ad3e341b3",
+    "username":"victor", "serverid":"1", "status":"logout"}
 \end{verbatim}
 \end{small}
 In this example, the generated new protocols are \verb|authenticate|, \verb|username|, \verb|password|, \verb|authresponse|, \verb|success|, \verb|reason|, \verb|notifyusersession|, \verb|sessionid| and \verb|status|. Note that how it reuse \verb|serverid| protocol keyword from previous example. We use Java Enum\footnote{https://docs.oracle.com/javase/tutorial/java/javaOO/enum.html} type for the protocol keyword definition in Strike Common module package. When implementing a new feature like above example, if there is existing protocol keyword then it will be reused. Otherwise, the new protocol keyword will be created. 
@@ -160,22 +151,22 @@ In our approach to multi-threading, we make use of Java Thread Pools\footnote{ht
 
 \end{enumerate}
 
-\begin{figure}[h]
-\includegraphics[scale=0.9]{strike_protocol_handlers.png}
-\centering
-\caption{Strike Server - Protocol Handlers}
-\label{fig:protohdl}
-\centering
-\end{figure}
+%\begin{figure}[h]
+%\includegraphics[scale=0.9]{strike_protocol_handlers.png}
+%\centering
+%\caption{Strike Server - Protocol Handlers}
+%\label{fig:protohdl}
+%\centering
+%\end{figure}
 
 Figure~\ref{fig:clientsq} shows the sequence diagram about how these classes orchestrate to run concurrently to handle incoming and outgoing client messages. Similarly, the \textbf{ManagementService} and \textbf{ManagementConnection} is implemented in the same concurrent approach for server-to-server communications. Protocols handling are implemented in Factory creation design pattern to be defensive programming for concurrency proof --- i.e. these handler objects will be created cheaply and garbage collected efficiently.
 
-\begin{figure}[h]
-\includegraphics[scale=0.9]{strike_server_client_conn.png}
-\caption{Strike Server - Client Connection Sequence Diagram}
-\label{fig:clientsq}
-\centering
-\end{figure}
+%\begin{figure}[h]
+%\includegraphics[scale=0.9]{strike_server_client_conn.png}
+%\caption{Strike Server - Client Connection Sequence Diagram}
+%\label{fig:clientsq}
+%\centering
+%\end{figure}
 
 \textbf{ServerState} object is the critical region of the Strike server where it stores the state of the server in memory. It is an Singleton object and there is only single existence throughout the application life cycle. Its data structure properties are backed by Java Concurrency data structure as well as use of Java \textbf{synchronized} keyword on non-concurrency data type. The \textbf{ServerState} properties can be easily persisted into persistent store such as Database Management System as this software project progress along further.
 

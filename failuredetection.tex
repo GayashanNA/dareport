@@ -24,13 +24,20 @@ The following are the steps of gossip algorithms and how it works in Strike serv
 
 \item Each server maintains a \textbf{HeartbeatCountList} to store heartbeat counts for all known servers and a \textbf{SuspectList} to store the current suspects. In Java, we use \emph{CocurrentHashMap} to maintain these list --- which is equivalent of \emph{Vector} data structure --- in a form of:
 
-\verb|HeartbeatCountList = {"1":0, "2":2, "3":8, "4":2}|
+\begin{small}
+\begin{verbatim}
+HeartbeatCountList = {"1":0, "2":2, "3":8, "4":2}
+SuspectList = {"1":NOT_SUSPECTED, "2":NOT_SUSPECTED, "3":SUSPECTED, "4":NOT_SUSPECTED}
+\end{verbatim}
+\end{small}
 
-\verb|SuspectList = {"1":NOT_SUSPECTED, "2":NOT_SUSPECTED, "3":SUSPECTED, "4":NOT_SUSPECTED}|
+%\verb|HeartbeatCountList = {"1":0, "2":2, "3":8, "4":2}|
+
+%\verb|SuspectList = {"1":NOT_SUSPECTED, "2":NOT_SUSPECTED, "3":SUSPECTED, "4":NOT_SUSPECTED}|
 
 Note that \verb|NOT_SUSPECTED| and \verb|SUSPECTED| are Java Enum type of constants. In the following paragraphs, the "gossip list" connotes "HeartbeatCountList".
 
-\item For every T seconds, each failure detection module will reset its own heartbeat counter in gossip list to 0 and increase the heartbeat counters of all other servers. Then it randomly picks another failure detection module (another remote server) and send its gossip list using "gossip protocol" as shown in Figure~\ref{fig:sending_gmsg}. The gossip message contains the ID of sender and the gossip list maintained by the sender:
+\item For every T seconds, each failure detection module will reset its own heartbeat counter in gossip list to 0 and increase the heartbeat counters of all other servers. Then it randomly picks another failure detection module (another remote server) and send its gossip list using "gossip protocol" as shown in Figure~\ref{fig:send_receive_gmsg}. The gossip message contains the ID of sender and the gossip list maintained by the sender:
 
 \begin{small}
 \begin{verbatim}
@@ -38,28 +45,32 @@ Note that \verb|NOT_SUSPECTED| and \verb|SUSPECTED| are Java Enum type of consta
 \end{verbatim}
 \end{small}
 
+%\begin{figure}[h]
+%\includegraphics[scale=0.6]{gossip_send.jpg}
+%\centering
+%\caption{Gossip Module - Sending Gossip Message}
+%\label{fig:sending_gmsg}
+%\centering
+%\end{figure}
 
-\begin{figure}[h]
-\includegraphics[scale=0.6]{gossip_send.jpg}
-\centering
-\caption{Gossip Module - Sending Gossip Message}
-\label{fig:sending_gmsg}
-\centering
-\end{figure}
+\item Another server receiving gossip message will merge its local gossip list and the gossip list contained in gossip protocol message by adopting the minimum heartbeat counter for each known server as shown in Figure~\ref{fig:send_receive_gmsg}.
 
-\item Another server receiving gossip message will merge its local gossip list and the gossip list contained in gossip protocol message by adopting the minimum heartbeat counter for each known server as shown in Figure~\ref{fig:receiving_gmsg}.
-
-\begin{figure}[h]
-\includegraphics[scale=0.6]{gossip_receive.jpg}
-\centering
-\caption{Gossip Module - Receiving Gossip Message and Updating Gossip List}
-\label{fig:receiving_gmsg}
-\centering
-\end{figure}
+%\begin{figure}[h]
+%\includegraphics[scale=0.6]{gossip_receive.jpg}
+%\centering
+%\caption{Gossip Module - Receiving Gossip Message and Updating Gossip List}
+%\label{fig:receiving_gmsg}
+%\centering
+%\end{figure}
 
 \item At any point of time, if the difference between local heartbeat counter and the heartbeat counter of a remote server is greater than the error factor F, that particular remote server is suspected by the local server. For example, if the gossip list of \verb|server1| is \verb|{"1":0,"2":5,"3":1,"4":2}| when error factor F = 5, \verb|server1| suspects \verb|server2| has crashed. And SuspectList in \verb|server1| is updated as:
+\begin{small}
+\begin{verbatim}
+SuspectList = {"1":NOT_SUSPECTED, "2":SUSPECTED, "3":NOT_SUSPECTED, "4":NOT_SUSPECTED}
+\end{verbatim}
+\end{small}
 
-\verb|SuspectList = {"1":NOT_SUSPECTED, "2":SUSPECTED, "3":NOT_SUSPECTED, "4":NOT_SUSPECTED}|
+%\verb|SuspectList = {"1":NOT_SUSPECTED, "2":SUSPECTED, "3":NOT_SUSPECTED, "4":NOT_SUSPECTED}|
 
 \end{enumerate}
 
