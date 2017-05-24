@@ -105,7 +105,7 @@ No further action has taken if vote set is neutral or, more NO vote than YES vot
 In our experiment, we find that both of these algorithms meet the requirements of a consensus algorithm\cite{coulouris} in such that the following conditions hold for every execution of them:
 \begin{itemize}
 \item \emph{Termination: Eventually each correct process sets its decision variable.}
-\item \emph{Agreement: The decision value of all correct processes is the same: if $p_{i}$ and $p_{j}$ are correct and have entered the decided state, then $d_{i} = d_{j}   (i,j) = 1,2,...,N)$.}
+\item \emph{Agreement: The decision value of all correct processes is the same: if $p_{i}$ and $p_{j}$ are correct and have entered the decided state, then $d_{i} = d_{j}   (i,j = 1,2,...,N)$.}
 \item \emph{Integrity: If the correct processes all proposed the same value, then any correct process in the decided state has chosen that value.}
 
 \end{itemize}
